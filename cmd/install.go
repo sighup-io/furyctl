@@ -32,7 +32,7 @@ var installCmd = &cobra.Command{
 	Short: "Download dependencies specified in Furyfile.yml",
 	Long:  "Download dependencies specified in Furyfile.yml",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := furyconfig.MustReadFuryFile()
+		c := furyconfig.MustReadFuryFile("./")
 		packages := c.GetPackages()
 		err := download(packages)
 		if err != nil {

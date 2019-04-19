@@ -1,0 +1,11 @@
+modules:
+  - name: aws-ark
+    version: master
+
+roles:
+  - name: kube-node-common
+    version: master
+
+bases:
+  - name: monitoring/prometheus-operator
+    version: master

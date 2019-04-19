@@ -94,9 +94,9 @@ func (f *Furyconf) Parse() ([]Package, error) {
 }
 
 // MustReadFuryFile load Furyfile from current path and validates it
-func MustReadFuryFile() *Furyconf {
+func MustReadFuryFile(configFolderPath string) *Furyconf {
 	viper.SetConfigType("yml")
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(configFolderPath)
 	viper.SetConfigName(configFileName)
 
 	c := new(Furyconf)

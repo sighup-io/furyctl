@@ -13,3 +13,33 @@
 // limitations under the License.
 
 package furyconfig
+
+import (
+	"os"
+	"path/filepath"
+	"reflect"
+	"testing"
+)
+
+func TestParse(t *testing.T) {
+	gp := os.Getenv("GOPATH")
+	ap := filepath.Join(gp, "src/github.com/sighup-io/furyctl", "fixtures")
+	c := MustReadFuryFile(ap)
+	packages, err := c.Parse()
+
+	got := packages
+	want := []Package{
+		Package{Name: "kube-node-common", Version: "master", URL: "git@github.com:sighup-io/fury-kubernetes-kube-node-common//roles?ref=master", Dir: "vendor/roles/kube-node-common", Kind: "roles"},
+		Package{Name: "aws-ark", Version: "master", URL: "git@github.com:sighup-io/fury-kubernetes-aws-ark//modules?ref=master", Dir: "vendor/modules/aws-ark", Kind: "modules"},
+		Package{Name: "monitoring/prometheus-operator", Version: "master", URL: "git@github.com:sighup-io/fury-kubernetes-monitoring//katalog/prometheus-operator?ref=master", Dir: "vendor/katalog/monitoring/prometheus-operator", Kind: "katalog"},
+	}
+
+	if err != nil {
+		panic(err)
+	}
+
+	if !reflect.DeepEqual(packages, want) {
+		t.Errorf("got %v want %v\n", got, want)
+	}
+
+}

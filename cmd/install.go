@@ -17,8 +17,8 @@ package cmd
 import (
 	"log"
 
+	"github.com/sighup-io/furyctl/internal/furyconfig"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 func init() {
@@ -32,28 +32,9 @@ var installCmd = &cobra.Command{
 	Short: "Download dependencies specified in Furyfile.yml",
 	Long:  "Download dependencies specified in Furyfile.yml",
 	Run: func(cmd *cobra.Command, args []string) {
-		viper.SetConfigType("yml")
-		viper.AddConfigPath(".")
-		viper.SetConfigName(configFile)
-		config := new(Furyconf)
-		if err := viper.ReadInConfig(); err != nil {
-			log.Fatalf("Error reading config file, %s", err)
-		}
-		err := viper.Unmarshal(config)
-		if err != nil {
-			log.Fatalf("unable to decode into struct, %v", err)
-		}
-
-		err = config.Validate()
-		if err != nil {
-			log.Println("ERROR VALIDATING: ", err)
-		}
-
-		list, err := config.Parse()
-		if err != nil {
-			log.Println("ERROR PARSING: ", err)
-		}
-		err = download(list)
+		c := furyconfig.MustReadFuryFile()
+		packages := c.GetPackages()
+		err := download(packages)
 		if err != nil {
 			log.Println("ERROR DOWNLOADING: ", err)
 		}

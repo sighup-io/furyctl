@@ -7,11 +7,12 @@ import (
 	"sync"
 
 	getter "github.com/hashicorp/go-getter"
+	"github.com/sighup-io/furyctl/internal/furyconfig"
 )
 
 var parallel bool
 
-func download(packages []Package) error {
+func download(packages []furyconfig.Package) error {
 	// Preparing all the necessary data for a worker pool
 	var wg sync.WaitGroup
 	var numberOfWorkers int
@@ -21,7 +22,7 @@ func download(packages []Package) error {
 		numberOfWorkers = 1
 	}
 	errChan := make(chan error, len(packages))
-	jobs := make(chan Package, len(packages))
+	jobs := make(chan furyconfig.Package, len(packages))
 	//log.Printf("workers = %d", numberOfWorkers)
 
 	// Populating the job channel with all the packages to downlaod
@@ -35,7 +36,7 @@ func download(packages []Package) error {
 		go func(i int) {
 			for data := range jobs {
 				//log.Printf("%d : received data %v", i, data)
-				res := get(data.url, data.dir)
+				res := get(data.URL, data.Dir)
 				errChan <- res
 				//log.Printf("%d : finished with data %v", i, data)
 			}

@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package furyconfig
 
 import (
 	"fmt"
+	"log"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 const (
-	configFile              = "Furyfile"
+	configFileName          = "Furyfile"
 	repoPrefix              = "git@github.com:sighup-io/fury-kubernetes"
 	defaultVendorFolderName = "vendor"
 )
@@ -37,9 +40,9 @@ type Furyconf struct {
 type Package struct {
 	Name    string `yaml:"name"`
 	Version string `yaml:"version"`
-	url     string
-	dir     string
-	kind    string
+	URL     string
+	Dir     string
+	Kind    string
 }
 
 // Validate is used for validation of configuration and initization of default paramethers
@@ -50,20 +53,30 @@ func (f *Furyconf) Validate() error {
 	return nil
 }
 
+// GetPackages parse the packages from FuryFile and return them in a list
+func (f *Furyconf) GetPackages() []Package {
+	list, err := f.Parse()
+	if err != nil {
+		log.Println("ERROR PARSING Furyfile: ", err)
+	}
+
+	return list
+}
+
 // Parse reads the furyconf structs and created a list of packaged to be downloaded
 func (f *Furyconf) Parse() ([]Package, error) {
 	pkgs := make([]Package, 0, 0)
 	// First we aggreggate all packages in one single list
 	for _, v := range f.Roles {
-		v.kind = "roles"
+		v.Kind = "roles"
 		pkgs = append(pkgs, v)
 	}
 	for _, v := range f.Modules {
-		v.kind = "modules"
+		v.Kind = "modules"
 		pkgs = append(pkgs, v)
 	}
 	for _, v := range f.Bases {
-		v.kind = "katalog"
+		v.Kind = "katalog"
 		pkgs = append(pkgs, v)
 	}
 
@@ -71,11 +84,34 @@ func (f *Furyconf) Parse() ([]Package, error) {
 	for i := 0; i < len(pkgs); i++ {
 		block := strings.Split(pkgs[i].Name, "/")
 		if len(block) == 2 {
-			pkgs[i].url = fmt.Sprintf("%s-%s//%s/%s?ref=%s", repoPrefix, block[0], pkgs[i].kind, block[1], pkgs[i].Version)
+			pkgs[i].URL = fmt.Sprintf("%s-%s//%s/%s?ref=%s", repoPrefix, block[0], pkgs[i].Kind, block[1], pkgs[i].Version)
 		} else if len(block) == 1 {
-			pkgs[i].url = fmt.Sprintf("%s-%s//%s?ref=%s", repoPrefix, block[0], pkgs[i].kind, pkgs[i].Version)
+			pkgs[i].URL = fmt.Sprintf("%s-%s//%s?ref=%s", repoPrefix, block[0], pkgs[i].Kind, pkgs[i].Version)
 		}
-		pkgs[i].dir = fmt.Sprintf("%s/%s/%s", f.VendorFolderName, pkgs[i].kind, pkgs[i].Name)
+		pkgs[i].Dir = fmt.Sprintf("%s/%s/%s", f.VendorFolderName, pkgs[i].Kind, pkgs[i].Name)
 	}
 	return pkgs, nil
+}
+
+// MustReadFuryFile load Furyfile from current path and validates it
+func MustReadFuryFile() *Furyconf {
+	viper.SetConfigType("yml")
+	viper.AddConfigPath(".")
+	viper.SetConfigName(configFileName)
+
+	c := new(Furyconf)
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
+	}
+	err := viper.Unmarshal(c)
+	if err != nil {
+		log.Fatalf("unable to decode into struct, %v", err)
+	}
+
+	err = c.Validate()
+	if err != nil {
+		log.Println("ERROR VALIDATING Furyfile: ", err)
+	}
+
+	return c
 }

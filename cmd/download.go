@@ -36,8 +36,8 @@ func download(packages []furyconfig.Package) error {
 		go func(i int) {
 			for data := range jobs {
 				//log.Printf("%d : received data %v", i, data)
-				res := get(data.URL, data.Dir)
-				errChan <- res
+				err := get(data.URL, data.Dir)
+				errChan <- err
 				//log.Printf("%d : finished with data %v", i, data)
 			}
 			//log.Printf("%d : CLOSING", i)

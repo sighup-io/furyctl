@@ -84,6 +84,8 @@ func (f *Furyconf) Parse() ([]Package, error) {
 	for i := 0; i < len(pkgs); i++ {
 		block := strings.Split(pkgs[i].Name, "/")
 		if len(block) == 2 {
+			// the double slash is required to separate the repository name from a folder inside the repository
+			// example: github.com/my-org/my-repo//foldername
 			pkgs[i].URL = fmt.Sprintf("%s-%s//%s/%s?ref=%s", repoPrefix, block[0], pkgs[i].Kind, block[1], pkgs[i].Version)
 		} else if len(block) == 1 {
 			pkgs[i].URL = fmt.Sprintf("%s-%s//%s?ref=%s", repoPrefix, block[0], pkgs[i].Kind, pkgs[i].Version)

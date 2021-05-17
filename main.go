@@ -14,9 +14,7 @@
 
 package main
 
-import (
-	"github.com/sighupio/furyctl/cmd"
-)
+import "github.com/sighupio/furyctl/cmd"
 
 func main() {
 	cmd.Execute()

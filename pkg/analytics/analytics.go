@@ -23,6 +23,7 @@ const (
 	bootstrapDestroyEvent = "BootstrapDestroy"
 	clusterInitEvent      = "ClusterInit"
 	clusterApplyEvent     = "ClusterApply"
+	clusterProvisionEvent = "ClusterProvision"
 	clusterDestroyEvent   = "ClusterDestroy"
 )
 
@@ -155,6 +156,16 @@ func TrackClusterApply(token string, success bool, provisioner string, dryRun bo
 		"githubToken": token,
 	}
 	track(clusterApplyEvent, success, token, props)
+}
+
+// TrackClusterProvision sends a tracking event to mixpanel when the user uses the cluster provision subcommand
+func TrackClusterProvision(token string, success bool, provisioner string, dryRun bool) {
+	props := map[string]interface{}{
+		"provisioner": provisioner,
+		"dryRun":      dryRun,
+		"githubToken": token,
+	}
+	track(clusterProvisionEvent, success, token, props)
 }
 
 // TrackClusterDestroy sends a tracking event to mixpanel when the user uses the cluster destroy command

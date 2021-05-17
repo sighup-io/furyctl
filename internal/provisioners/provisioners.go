@@ -20,6 +20,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type KubeProvision struct {
+	KubectlVersion    string
+	KustomizeVersion  string
+	FuryVersion       string
+	BinDirectory      string
+	ManifestDirectory string
+
+	kubectlPath   string
+	kustomizePath string
+}
+
+func (k *KubeProvision) Init() error {
+
+	return nil
+}
+
 // Provisioner represents a kubernetes terraform provisioner
 type Provisioner interface {
 	InitMessage() string

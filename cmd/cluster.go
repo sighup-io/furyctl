@@ -165,6 +165,27 @@ var (
 			return nil
 		},
 	}
+	clusterProvisionCmd = &cobra.Command{
+		Use: "provision",
+		// TODO
+		Short:   "TODO: Provision the distribution",
+		PreRunE: cPre,
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+
+			err = prj.Check()
+			if err != nil {
+				return fmt.Errorf("the project %v has to be created. Execute cluster init before cluster apply. %v", cWorkingDir, err)
+			}
+
+			err = clu.Provision()
+			if err != nil {
+				analytics.TrackClusterProvision(cGitHubToken, false, cfg.Provisioner, cDryRun)
+				return err
+			}
+			analytics.TrackClusterProvision(cGitHubToken, true, cfg.Provisioner, cDryRun)
+			return nil
+		},
+	}
 	clusterDestroyCmd = &cobra.Command{
 		Use:     "destroy",
 		Short:   "ATTENTION: Destroys the cluster project",
@@ -192,18 +213,22 @@ func init() {
 
 	clusterInitCmd.PersistentFlags().StringVarP(&cConfigFilePath, "config", "c", "cluster.yml", "Cluster configuration file path")
 	clusterApplyCmd.PersistentFlags().StringVarP(&cConfigFilePath, "config", "c", "cluster.yml", "Cluster configuration file path")
+	clusterProvisionCmd.PersistentFlags().StringVarP(&cConfigFilePath, "config", "c", "cluster.yml", "Cluster configuration file path")
 	clusterDestroyCmd.PersistentFlags().StringVarP(&cConfigFilePath, "config", "c", "cluster.yml", "Cluster configuration file path")
 
 	clusterInitCmd.PersistentFlags().StringVarP(&cWorkingDir, "workdir", "w", "./cluster", "Working directory to create and place all project files. Must not exists.")
 	clusterApplyCmd.PersistentFlags().StringVarP(&cWorkingDir, "workdir", "w", "./cluster", "Working directory with all project files")
+	clusterProvisionCmd.PersistentFlags().StringVarP(&cWorkingDir, "workdir", "w", "./cluster", "Working directory with all project files")
 	clusterDestroyCmd.PersistentFlags().StringVarP(&cWorkingDir, "workdir", "w", "./cluster", "Working directory with all project files")
 
 	clusterInitCmd.PersistentFlags().StringVarP(&cGitHubToken, "token", "t", "", "GitHub token to access enterprise repositories. Contact sales@sighup.io")
 	clusterApplyCmd.PersistentFlags().StringVarP(&cGitHubToken, "token", "t", "", "GitHub token to access enterprise repositories. Contact sales@sighup.io")
+	clusterProvisionCmd.PersistentFlags().StringVarP(&cGitHubToken, "token", "t", "", "GitHub token to access enterprise repositories. Contact sales@sighup.io")
 	clusterDestroyCmd.PersistentFlags().StringVarP(&cGitHubToken, "token", "t", "", "GitHub token to access enterprise repositories. Contact sales@sighup.io")
 
 	clusterInitCmd.PersistentFlags().BoolVar(&cReconfigure, "reconfigure", false, "Reconfigure the backend, ignoring any saved configuration")
 	clusterApplyCmd.PersistentFlags().BoolVar(&cReconfigure, "reconfigure", false, "Reconfigure the backend, ignoring any saved configuration")
+	clusterProvisionCmd.PersistentFlags().BoolVar(&cReconfigure, "reconfigure", false, "Reconfigure the backend, ignoring any saved configuration")
 	clusterDestroyCmd.PersistentFlags().BoolVar(&cReconfigure, "reconfigure", false, "Reconfigure the backend, ignoring any saved configuration")
 
 	clusterInitCmd.PersistentFlags().BoolVar(&cReset, "reset", false, "Forces the re-initialization of the project. It deletes the content of the workdir recreating everything")
@@ -214,6 +239,7 @@ func init() {
 
 	clusterCmd.AddCommand(clusterInitCmd)
 	clusterCmd.AddCommand(clusterApplyCmd)
+	clusterCmd.AddCommand(clusterProvisionCmd)
 	clusterCmd.AddCommand(clusterDestroyCmd)
 	clusterCmd.AddCommand(clusterTemplateCmd)
 	rootCmd.AddCommand(clusterCmd)

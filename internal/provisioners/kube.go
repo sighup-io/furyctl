@@ -1,8 +1,11 @@
 package provisioners
 
 import (
+	"bufio"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/sighupio/furyctl/internal/configuration"
@@ -106,9 +109,80 @@ func (k *KubeProvision) vendor() error {
 }
 
 func (k *KubeProvision) Build() error {
+	cmd := exec.Command(k.kustomizePath, "build", ".")
+	cmd.Dir = k.ManifestDirectory
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	err = cmd.Start()
+	if err != nil {
+		log.WithError(err).Fatal("error executing kustomize build")
+		return err
+	}
+	in := bufio.NewScanner(stdout)
+	for in.Scan() {
+		log.Debug(in.Text())
+	}
+	if in.Err() != nil {
+		log.WithError(err).Error("output error")
+		return in.Err()
+	}
 	return nil
 }
 
-func (k *KubeProvision) Deploy() error {
+func (k *KubeProvision) Deploy(kubeconfigPath string) error {
+
+	cmd := exec.Command(k.kustomizePath, "build", ".")
+	cmd.Dir = k.ManifestDirectory
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	err = cmd.Start()
+	if err != nil {
+		log.WithError(err).Fatal("error executing kustomize build")
+		return err
+	}
+	in := bufio.NewScanner(stdout)
+
+	// TEMPORAL FILE TO USE WITH KUBECTL
+	file, err := ioutil.TempFile(k.ManifestDirectory, "rendered-")
+	if err != nil {
+		log.WithError(err).Fatal(err)
+		return err
+	}
+	defer os.Remove(file.Name())
+
+	for in.Scan() {
+		d := in.Text()
+		log.Debug(d)
+		file.WriteString(fmt.Sprintln(d))
+	}
+	if in.Err() != nil {
+		log.WithError(err).Error("output error")
+		return in.Err()
+	}
+	// kubectl
+	cmd = exec.Command(k.kubectlPath, "--kubeconfig", kubeconfigPath, "apply", "-f", file.Name())
+	cmd.Dir = k.ManifestDirectory
+	stdout, err = cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	err = cmd.Start()
+	if err != nil {
+		log.WithError(err).Fatal("error executing kubectl apply")
+		return err
+	}
+	in = bufio.NewScanner(stdout)
+
+	for in.Scan() {
+		log.Debug(in.Text())
+	}
+	if in.Err() != nil {
+		log.WithError(err).Error("output error")
+		return in.Err()
+	}
 	return nil
 }

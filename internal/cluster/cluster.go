@@ -35,7 +35,7 @@ type Cluster struct {
 	project     *project.Project
 	provisioner *provisioners.Provisioner
 
-	kubeProvisioner *provisioners.KubeProvision
+	kubeProvision *provisioners.KubeProvision
 }
 
 // Options are valid configuration needed to proceed with the cluster management
@@ -361,10 +361,30 @@ func (c *Cluster) Provision() (err error) {
 	c.s.Start()
 	err = c.initKubeProvision()
 	if err != nil {
-		log.Errorf("Error while initializing the kube executor: %v", err)
+		log.Errorf("Error while initializing the kube provision: %v", err)
 		return err
 	}
 
+	c.s.Stop()
+	//TODO change the message
+	c.s.Suffix = initKubeProvisionMessage
+	c.s.Start()
+	kubeProvision := *c.kubeProvision
+	err = kubeProvision.Build()
+	if err != nil {
+		log.Errorf("Error while building with the kube provision: %v", err)
+		return err
+	}
+
+	c.s.Stop()
+	//TODO change the message
+	c.s.Suffix = initKubeProvisionMessage
+	c.s.Start()
+	err = kubeProvision.Deploy(filepath.Join(c.options.Project.Path, "secrets/kubeconfig"))
+	if err != nil {
+		log.Errorf("Error while deploying with the kube provision: %v", err)
+		return err
+	}
 	return nil
 }
 
@@ -463,7 +483,7 @@ func (c *Cluster) initKubeProvision() (err error) {
 		ManifestDirectory: projectManifestDir,
 	}
 	k.Init()
-	c.kubeProvisioner = &k
+	c.kubeProvision = &k
 	return nil
 }
 

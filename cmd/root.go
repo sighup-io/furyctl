@@ -33,6 +33,14 @@ var (
 	s                *spinner.Spinner
 	debug            bool
 	disableAnalytics bool
+
+	https    bool
+	prefix   string
+	parallel bool
+)
+
+const (
+	configFile = "Furyfile"
 )
 
 // Execute is the main entrypoint of furyctl

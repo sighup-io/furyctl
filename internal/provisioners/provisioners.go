@@ -20,22 +20,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type KubeProvision struct {
-	KubectlVersion    string
-	KustomizeVersion  string
-	FuryVersion       string
-	BinDirectory      string
-	ManifestDirectory string
-
-	kubectlPath   string
-	kustomizePath string
-}
-
-func (k *KubeProvision) Init() error {
-
-	return nil
-}
-
 // Provisioner represents a kubernetes terraform provisioner
 type Provisioner interface {
 	InitMessage() string
@@ -82,6 +66,7 @@ func getClusterProvisioner(config configuration.Configuration) (Provisioner, err
 		return nil, errors.New("Provisioner not found")
 	}
 }
+
 func getBootstrapProvisioner(config configuration.Configuration) (Provisioner, error) {
 	switch {
 	case config.Provisioner == "aws":

@@ -10,14 +10,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Download(version string, path string) error {
+func Download(version string, path string) (string, error) {
 	this_os, err := osDetect()
 	if err != nil {
-		return err
+		return "", err
 	}
 	this_arch, err := archDetect()
 	if err != nil {
-		return err
+		return "", err
 	}
 	client := &getter.Client{
 		Src:  fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%v/bin/%v/%v/kubectl", version, this_os, this_arch),
@@ -26,13 +26,14 @@ func Download(version string, path string) error {
 	}
 	err = client.Get()
 	if err != nil {
-		return err
+		return "", err
 	}
-	err = os.Chmod(filepath.Join(path, "kubectl"), 0755)
+	kubectlPath := filepath.Join(path, "kubectl")
+	err = os.Chmod(kubectlPath, 0755)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return kubectlPath, nil
 }
 
 func osDetect() (string, error) {

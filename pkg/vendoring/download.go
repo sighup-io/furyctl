@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package cmd
+package vendoring
 
 import (
 	"fmt"
@@ -11,16 +11,13 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sighupio/furyctl/internal/configuration"
 	"github.com/sirupsen/logrus"
 
 	getter "github.com/hashicorp/go-getter"
 )
 
-var parallel bool
-var https bool
-var prefix string
-
-func download(packages []Package) error {
+func DownloadPackages(packages []configuration.Package, parallel bool) error {
 
 	// Preparing all the necessary data for a worker pool
 	var wg sync.WaitGroup
@@ -31,7 +28,7 @@ func download(packages []Package) error {
 		numberOfWorkers = 1
 	}
 	errChan := make(chan error, len(packages))
-	jobs := make(chan Package, len(packages))
+	jobs := make(chan configuration.Package, len(packages))
 	logrus.Debugf("workers = %d", numberOfWorkers)
 
 	// Populating the job channel with all the packages to downlaod
@@ -45,7 +42,7 @@ func download(packages []Package) error {
 		go func(i int) {
 			for data := range jobs {
 				logrus.Debugf("%d : received data %v", i, data)
-				res := get(data.url, data.dir, getter.ClientModeDir, true)
+				res := get(data.Url, data.Dir, getter.ClientModeDir, true)
 				errChan <- res
 				logrus.Debugf("%d : finished with data %v", i, data)
 			}
@@ -90,7 +87,7 @@ func get(src, dest string, mode getter.ClientMode, cleanGitFolder bool) error {
 	if cleanGitFolder {
 
 		if _, err := os.Stat(dest); !os.IsNotExist(err) {
-			logrus.Infof("%s already exists! removing it", dest)
+			logrus.Debugf("%s already exists! removing it", dest)
 			err = removeDir(dest)
 			if err != nil {
 				logrus.Error(err)
@@ -102,7 +99,7 @@ func get(src, dest string, mode getter.ClientMode, cleanGitFolder bool) error {
 	humanReadableDownloadLog(src, dest)
 	_ = client.Get()
 	if cleanGitFolder {
-		logrus.Infof("removing %s", gitFolder)
+		logrus.Debugf("removing %s", gitFolder)
 		err = removeDir(gitFolder)
 	}
 	if err != nil {

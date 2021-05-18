@@ -15,6 +15,8 @@
 package cmd
 
 import (
+	"github.com/sighupio/furyctl/internal/configuration"
+	"github.com/sighupio/furyctl/pkg/vendoring"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,7 +38,7 @@ var vendorCmd = &cobra.Command{
 		viper.SetConfigType("yml")
 		viper.AddConfigPath(".")
 		viper.SetConfigName(configFile)
-		config := new(Furyconf)
+		config := new(configuration.Furyconf)
 		if err := viper.ReadInConfig(); err != nil {
 			logrus.Fatalf("Error reading config file, %s", err)
 		}
@@ -50,7 +52,7 @@ var vendorCmd = &cobra.Command{
 			logrus.WithError(err).Error("ERROR VALIDATING")
 		}
 
-		list, err := config.Parse(prefix)
+		list, err := config.Parse(prefix, https)
 
 		if err != nil {
 			//logrus.Errorln("ERROR PARSING: ", err)
@@ -58,7 +60,7 @@ var vendorCmd = &cobra.Command{
 
 		}
 
-		err = download(list)
+		err = vendoring.DownloadPackages(list, parallel)
 		if err != nil {
 			//logrus.Errorln("ERROR DOWNLOADING: ", err)
 			logrus.WithError(err).Error("ERROR DOWNLOADING")

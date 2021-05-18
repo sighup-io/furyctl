@@ -17,13 +17,12 @@ import (
 	"github.com/sighupio/furyctl/internal/project"
 	"github.com/sighupio/furyctl/internal/provisioners"
 
-	kube "github.com/sighupio/furyctl/pkg/kubectl"
-	kust "github.com/sighupio/furyctl/pkg/kustomize"
 	"github.com/sighupio/furyctl/pkg/terraform"
 	log "github.com/sirupsen/logrus"
 )
 
 const initExecutorMessage = " Initializing the terraform executor"
+const initKubeProvisionMessage = " Initializing the kube executor"
 
 // List of default subdirectories needed to run any provisioner.
 var clusterProjectDefaultSubDirs = []string{"logs", "configuration", "output", "bin", "secrets", "manifests"}
@@ -35,6 +34,8 @@ type Cluster struct {
 
 	project     *project.Project
 	provisioner *provisioners.Provisioner
+
+	kubeProvisioner *provisioners.KubeProvision
 }
 
 // Options are valid configuration needed to proceed with the cluster management
@@ -356,71 +357,14 @@ func (c *Cluster) Provision() (err error) {
 	}
 
 	c.s.Stop()
-	c.s.Suffix = initExecutorMessage
+	c.s.Suffix = initKubeProvisionMessage
 	c.s.Start()
-	err = c.initTerraformExecutor()
+	err = c.initKubeProvision()
 	if err != nil {
-		log.Errorf("Error while initializing the terraform executor: %v", err)
+		log.Errorf("Error while initializing the kube executor: %v", err)
 		return err
 	}
 
-	// Install the provisioner files into the project structure
-	c.s.Stop()
-	c.s.Suffix = " Updating provisioner terraform files"
-	c.s.Start()
-	err = c.installProvisionerTerraformFiles()
-	if err != nil {
-		log.Warnf("error while copying terraform project from the provisioner to the project dir: %v", err)
-	}
-
-	// Init the terraform project
-	prov := *c.provisioner
-	tf := prov.TerraformExecutor()
-	c.s.Stop()
-	c.s.Suffix = " Re-Initializing terraform project"
-	c.s.Start()
-
-	err = tf.Init(context.Background(), tfexec.Reconfigure(c.options.TerraformOpts.ReconfigureBackend))
-	if err != nil {
-		log.Errorf("error while running terraform init in the project dir: %v", err)
-		return err
-	}
-
-	c.s.Stop()
-
-	c.s.Suffix = " Applying terraform project"
-	c.s.Start()
-	kubeconfig, err := prov.Update()
-	if err != nil {
-		log.Errorf("Error while updating the cluster. Take a look to the logs. %v", err)
-		return err
-	}
-	c.s.Stop()
-	c.s.Suffix = " Saving outputs"
-	c.s.Start()
-	var output []byte
-	output, err = c.output()
-	if err != nil {
-		log.Errorf("Error while getting the output with the cluster data: %v", err)
-		return err
-	}
-
-	proj := *c.project
-	err = proj.WriteFile("output/output.json", output)
-	if err != nil {
-		log.Errorf("Error while writting the output.json to the project directory: %v", err)
-		return err
-	}
-	c.s.Stop()
-
-	err = proj.WriteFile("secrets/kubeconfig", []byte(kubeconfig))
-	if err != nil {
-		log.Errorf("Error while writting the kubeconfig to the project directory: %v", err)
-		return err
-	}
-	c.s.Stop()
-
-	c.postUpdate()
 	return nil
 }
 
@@ -507,26 +451,19 @@ func (c *Cluster) installProvisionerTerraformFiles() (err error) {
 }
 
 // TODO
-func (c *Cluster) initProvisionExecutor() (err error) {
+func (c *Cluster) initKubeProvision() (err error) {
+	projectBinDir := filepath.Join(c.options.Project.Path, "bin")
+	projectManifestDir := filepath.Join(c.options.Project.Path, "manifests")
+	// TODO get these variables from user input
 	k := provisioners.KubeProvision{
-		KubectlVersion:   "v1.21.0",
-		KustomizeVersion: "v3.10.0",
-		FuryVersion:      "v1.5.1",
+		KubectlVersion:    "v1.21.0",
+		KustomizeVersion:  "v3.10.0",
+		FuryVersion:       "v1.5.1",
+		BinDirectory:      projectBinDir,
+		ManifestDirectory: projectManifestDir,
 	}
 	k.Init()
-	projectBinDir := filepath.Join(c.options.Project.Path, "bin")
-	err = kube.Download("v1.21.0", projectBinDir)
-	if err != nil {
-		return err
-	}
-	err = kust.Download("v3.10.0", projectBinDir)
-	if err != nil {
-		return err
-	}
-
-	// Attach the terraform executor to the provisioner
-	// prov := *c.provisioner
-	// prov.SetTerraformExecutor(tf)
+	c.kubeProvisioner = &k
 	return nil
 }
 

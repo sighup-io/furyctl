@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package configuration
 
 import (
 	"fmt"
@@ -23,7 +23,6 @@ import (
 )
 
 const (
-	configFile              = "Furyfile"
 	httpsRepoPrefix         = "git::https://github.com/sighupio/fury-kubernetes"
 	sshRepoPrefix           = "git@github.com:sighupio/fury-kubernetes"
 	defaultVendorFolderName = "vendor"
@@ -68,8 +67,8 @@ type VersionPattern map[string]string
 type Package struct {
 	Name        string `yaml:"name"`
 	Version     string `yaml:"version"`
-	url         string
-	dir         string
+	Url         string
+	Dir         string
 	kind        string
 	ProviderOpt ProviderOptSpec `mapstructure:"provider"`
 	Registry    bool            `mapstructure:"registry"`
@@ -90,7 +89,7 @@ func (f *Furyconf) Validate() error {
 }
 
 // Parse reads the furyconf structs and created a list of packaged to be downloaded
-func (f *Furyconf) Parse(prefix string) ([]Package, error) {
+func (f *Furyconf) Parse(prefix string, https bool) ([]Package, error) {
 	pkgs := make([]Package, 0, 0)
 	// First we aggreggate all packages in one single list
 	for _, v := range f.Roles {
@@ -136,9 +135,9 @@ func (f *Furyconf) Parse(prefix string) ([]Package, error) {
 		cloudPlatform := pkgs[i].ProviderOpt
 		pkgKind := pkgs[i].kind
 
-		pkgs[i].url = newURLSpec(repoPrefix, strings.Split(pkgs[i].Name, "/"), dotGitParticle, pkgKind, version, registry, cloudPlatform, newKind(pkgKind, f.Provider)).getConsumableURL()
+		pkgs[i].Url = newURLSpec(repoPrefix, strings.Split(pkgs[i].Name, "/"), dotGitParticle, pkgKind, version, registry, cloudPlatform, newKind(pkgKind, f.Provider)).getConsumableURL()
 
-		pkgs[i].dir = newDir(f.VendorFolderName, pkgKind, pkgs[i].Name, registry, cloudPlatform).getConsumableDirectory()
+		pkgs[i].Dir = newDir(f.VendorFolderName, pkgKind, pkgs[i].Name, registry, cloudPlatform).getConsumableDirectory()
 
 	}
 

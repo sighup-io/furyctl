@@ -23,6 +23,8 @@ import (
 
 const initExecutorMessage = " Initializing the terraform executor"
 const initKubeProvisionMessage = " Initializing the kube executor"
+const buildKubeProvisionMessage = " Building the kube manifests"
+const deployKubeProvisionMessage = " Deploying the kube manifests"
 
 // List of default subdirectories needed to run any provisioner.
 var clusterProjectDefaultSubDirs = []string{"logs", "configuration", "output", "bin", "secrets", "manifests"}
@@ -44,6 +46,7 @@ type Options struct {
 	Project                  *project.Project
 	ProvisionerConfiguration *configuration.Configuration
 	TerraformOpts            *terraform.Options
+	KubeProvisionOptions     *provisioners.KubeProvisionOptions
 }
 
 // New builds a Cluster object with some configurations using Options
@@ -366,8 +369,7 @@ func (c *Cluster) Provision() (err error) {
 	}
 
 	c.s.Stop()
-	//TODO change the message
-	c.s.Suffix = initKubeProvisionMessage
+	c.s.Suffix = buildKubeProvisionMessage
 	c.s.Start()
 	kubeProvision := *c.kubeProvision
 	err = kubeProvision.Build()
@@ -377,8 +379,7 @@ func (c *Cluster) Provision() (err error) {
 	}
 
 	c.s.Stop()
-	//TODO change the message
-	c.s.Suffix = initKubeProvisionMessage
+	c.s.Suffix = deployKubeProvisionMessage
 	c.s.Start()
 	err = kubeProvision.Deploy(filepath.Join(c.options.Project.Path, "secrets/kubeconfig"))
 	if err != nil {
@@ -474,11 +475,10 @@ func (c *Cluster) installProvisionerTerraformFiles() (err error) {
 func (c *Cluster) initKubeProvision() (err error) {
 	projectBinDir := filepath.Join(c.options.Project.Path, "bin")
 	projectManifestDir := filepath.Join(c.options.Project.Path, "manifests")
-	// TODO get these variables from user input
 	k := provisioners.KubeProvision{
-		KubectlVersion:    "v1.21.0",
-		KustomizeVersion:  "v3.10.0",
-		FuryVersion:       "v1.5.1",
+		KubectlVersion:    c.options.KubeProvisionOptions.KubectlVersion,
+		KustomizeVersion:  c.options.KubeProvisionOptions.KustomizeVersion,
+		FuryVersion:       c.options.KubeProvisionOptions.FuryVersion,
 		BinDirectory:      projectBinDir,
 		ManifestDirectory: projectManifestDir,
 	}

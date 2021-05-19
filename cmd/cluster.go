@@ -16,6 +16,7 @@ import (
 	"github.com/sighupio/furyctl/internal/cluster"
 	"github.com/sighupio/furyctl/internal/configuration"
 	"github.com/sighupio/furyctl/internal/project"
+	"github.com/sighupio/furyctl/internal/provisioners"
 	"github.com/sighupio/furyctl/pkg/analytics"
 	"github.com/sighupio/furyctl/pkg/terraform"
 	log "github.com/sirupsen/logrus"
@@ -77,6 +78,11 @@ func cPre(cmd *cobra.Command, args []string) (err error) {
 			Debug:              cDryRun,
 			ReconfigureBackend: cReconfigure,
 		},
+		KubeProvisionOptions: &provisioners.KubeProvisionOptions{
+			KubectlVersion:   cKubectlVersion,
+			KustomizeVersion: cKustomizeVersion,
+			FuryVersion:      cFuryVersion,
+		},
 	}
 	clu, err = cluster.New(clusterOpts)
 	if err != nil {
@@ -97,6 +103,10 @@ var (
 	cReset               bool
 	cReconfigure         bool
 	cForce               bool
+
+	cFuryVersion      string
+	cKubectlVersion   string
+	cKustomizeVersion string
 
 	clusterCmd = &cobra.Command{
 		Use:   "cluster",
@@ -236,6 +246,10 @@ func init() {
 	clusterDestroyCmd.PersistentFlags().BoolVar(&cForce, "force", false, "Forces the destroy of the project. Doesn't ask for confirmation")
 
 	clusterTemplateCmd.PersistentFlags().StringVar(&cTemplateProvisioner, "provisioner", "", "Cluster provisioner")
+
+	clusterProvisionCmd.PersistentFlags().StringVar(&cFuryVersion, "fury-version", "v1.5.1", "Fury distribution version to use")
+	clusterProvisionCmd.PersistentFlags().StringVar(&cKubectlVersion, "kubectl-version", "v1.20.7", "Kubectl version to use")
+	clusterProvisionCmd.PersistentFlags().StringVar(&cKustomizeVersion, "kustomize-version", "v3.10.0", "Kustomize version to use")
 
 	clusterCmd.AddCommand(clusterInitCmd)
 	clusterCmd.AddCommand(clusterApplyCmd)

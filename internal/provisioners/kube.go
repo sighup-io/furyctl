@@ -17,6 +17,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type KubeProvisionOptions struct {
+	KubectlVersion   string
+	KustomizeVersion string
+	FuryVersion      string
+}
+
 type KubeProvision struct {
 	KubectlVersion    string
 	KustomizeVersion  string

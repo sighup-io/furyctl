@@ -133,6 +133,11 @@ func (e GKE) createVarFile() (err error) {
 			} else {
 				buffer.WriteString("subnetworks = []\n")
 			}
+			if np.SpotInstance.Enabled  {
+				buffer.WriteString(fmt.Sprintf("preemptible = %t\n", np.SpotInstance.Enabled))
+			} else {
+				buffer.WriteString(fmt.Sprintf("preemptible = %t\n", false))
+			}
 			if len(np.Labels) > 0 {
 				var labels []byte
 				labels, err = json.Marshal(np.Labels)
